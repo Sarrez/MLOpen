@@ -1,1 +1,10 @@
 # created by virtualenv automatically
+mlopenapp/static
+!mlopenapp/static/js
+!mlopenapp/static/css
+mlopenapp/staticfiles
+mlopenapp/.idea
+mlopenapp/data
+static
+pgdata
+

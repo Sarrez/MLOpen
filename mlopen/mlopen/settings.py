@@ -16,8 +16,10 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
+#celery settings 
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER", 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_BACKEND", 'redis://redis:6379/0')
+#CELERY_IMPORTS = ("mlopenapp.tasks", )
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -42,7 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'bootstrap4',
-    'mlopenapp.apps.MlopenappConfig'
+    'mlopenapp.apps.MlopenappConfig',
 ]
 
 MIDDLEWARE = [
@@ -85,7 +87,8 @@ DATABASES = {
         'NAME': os.environ.get('POSTGRES_DB', 'mlopen'),
         'USER': os.environ.get('POSTGRES_USER', 'mlopen'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'mlopen'),
-        'HOST': os.environ.get('POSTGRES_HOST', '::1'),
+        #'HOST': os.environ.get('POSTGRES_HOST', '::1'),
+        'HOST':'db',
         'PORT': os.environ.get('POSTGRES_PORT', '5432').split(":")[-1],
         'CONN_MAX_AGE': 300
     }

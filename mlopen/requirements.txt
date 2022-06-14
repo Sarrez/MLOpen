@@ -1,0 +1,9 @@
+django-bootstrap4
+pandas
+numpy
+django==3.2.10
+django-background-tasks
+opencv-python
+psycopg2
+celery==5.2.3
+Redis

@@ -1,3 +1,0 @@
-django-bootstrap4
-pandas
-numpy

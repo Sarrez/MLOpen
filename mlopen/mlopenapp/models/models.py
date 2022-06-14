@@ -19,7 +19,7 @@ class MLModel(models.Model):
     name = models.CharField(max_length=200, db_index=True)
     created_at = models.DateTimeField(null=True)
     updated_at = models.DateTimeField(null=True)
-    file = models.FileField(storage=FileSystemStorage(location=FILE_DIRS['model']))
+    file = models.FileField(storage=FileSystemStorage(location='/app/'))
 
 
 class MLArgs(models.Model):
@@ -46,6 +46,8 @@ class MLPipeline(models.Model):
     updated_at = models.DateTimeField(null=True)
     ml_models = models.ManyToManyField(MLModel)
     ml_args = models.ManyToManyField(MLArgs)
+    venv = models.CharField(max_length=1000, default='', db_index=True)
+    graphs = models.FileField(storage=FileSystemStorage(location='/app/'), default='')
 
     def get_models(self):
         return self.ml_models.all()

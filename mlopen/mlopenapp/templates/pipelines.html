@@ -46,10 +46,12 @@
       <input class="radio" id="graphtab" name="group" type="radio" value="Graphs" checked>
       <input class="radio" id="listtab" name="group" type="radio" value="Lists">
       <input class="radio" id="texttab" name="group" type="radio" value="Text">
+      <input class="radio" id="imgtab" name="group" type="radio" value="Images">
       <div class="tabs">
       <label class="tab" id="one-tab" for="graphtab">Graphs</label>
       <label class="tab" id="two-tab" for="listtab">Lists</label>
       <label class="tab" id="three-tab" for="texttab">Text</label>
+      <label class="tab" id="four-tab" for="imgtab">Images</label>
     </div>
     </div>
 </div>
@@ -60,15 +62,24 @@
 <div id="main_content">
         <div class="loader" id="loader">Loading...</div>
         <div id="errdiv"></div>
-            <div id="graphs"></div>
-            <div id="table_wrapper">
-            <div class="table">
-            <table class="styled-table" id="table" width="100%">
-            </table>
-            <div id="table_error"></div>
+        <div id="graphs"></div>
+        <div id="table_wrapper">
+        <div class="table">
+          <table class="styled-table" id="table" width="100%">
+          </table>
+          <div id="table_error"></div>
         </div>
-    </div>
-    <div id="text"></div>
-</div>
+      </div>
+      <div id="text"></div>
+      <div id="dropdown">
+        <select id="selectClass">
+          <option>Choose a class</option>
+        </select>
+      </div>
+      <div id="imgs">
+      <div class="container-fluid" id='imgscontainer'>
+      </div>
+      </div>
 
+</div>
 {% endblock %}

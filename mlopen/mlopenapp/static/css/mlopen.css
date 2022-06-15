@@ -448,12 +448,14 @@ div.DTE_Footer_Content {
 }
 #graphtab:checked ~ .panels #one-panel,
 #listtab:checked ~ .panels #two-panel,
-#texttab:checked ~ .panels #three-panel{
+#texttab:checked ~ .panels #three-panel,
+#imgtab:checked ~ .panels #four-panel{
   display:block
 }
 #graphtab:checked ~ .tabs #one-tab,
 #listtab:checked ~ .tabs #two-tab,
-#texttab:checked ~ .tabs #three-tab{
+#texttab:checked ~ .tabs #three-tab,
+#imgtab:checked ~ .tabs #four-tab{
   color: #ffffff;
   font-size: x-large;
   background: #559966;
@@ -476,6 +478,21 @@ div.DTE_Footer_Content {
   width: 90%;
 }
 /* END GRAPHS */
+/* START IMAGES */
+#imgs {
+  margin: auto;
+  padding: 10px;
+  width: 90%;
+}
+.image-tile {
+  position: relative;
+}
+#galleryimg {
+  width: 30%;
+  float: left;
+  margin: 1.66%;
+}
+/* END IMAGES */
 
 #table_error {
   margin: auto;
@@ -620,7 +637,6 @@ select {
   padding-bottom: 10px;
 }
 /* END BUTTON /*
-
 /* ICON */
 .icon_upload {
     position: relative;

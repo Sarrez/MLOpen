@@ -54,22 +54,95 @@ function generateText() {
     }
 }
 
+// START OF CODE FOR SHOWING IMAGES 
+function getClassList(classlist) {
+    var select = document.getElementById("selectClass");
+    var options = classlist;
+    for (var i = 0; i < options.length; i++) {
+      var opt = options[i];
+      var el = document.createElement("option");
+      el.textContent = opt;
+      el.value = opt;
+      select.appendChild(el);
+    }
+}
+function generateImgs() {
+    try {
+        if (ret.imgs) {
+            var outerdiv = "";
+            //get dict of pictures per class from results
+            var dict = new Object();
+            dict = ret.imgs[0]
+            classlist = Object.keys(dict)
+            console.log('Oi klaseis einai', classlist)
+            getClassList(classlist);
+            var container = document.getElementById('imgs');
+            document.getElementById("selectClass").addEventListener('change', function () {
+                console.log('Got your choice!');
+                var choice = document.getElementById("selectClass").value;
+                imgs = dict[choice];
+                var outerdiv = document.createElement('div');
+                outerdiv.classList.add("row");
+                //create nested divs, one for each images
+                for (var i = 0; i < imgs.length; i++) {
+                	//outer div
+                	var nested = document.createElement("div");
+                    nested.classList.add('col-12', 'col-sm-6', 'col-lg-3');
+                    //iner div start
+                    var nesteddiv = document.createElement("div");
+                    nesteddiv.classList.add("image-tile");
+                    image = '<img id="galleryimg" src="'+imgs[i]+'" y="west"/>';
+                    console.log('To onoma ths eikonas einai ', image);
+                    nesteddiv.innerHTML=image;
+                    //inner div end
+                    nested.appendChild(nesteddiv);
+                    outerdiv.appendChild(nested);
+    			}
+                $('#imgscontainer').html(outerdiv);
+                $('#imgscontainer').show();
+            });
+            $('#imgscontainer').html(outerdiv);
+            $('#imgscontainer').show();         
+        }
+        else {
+            $("#imgs").html("There are no images provided by this pipeline");
+            $('#dropdown').hide();
+        }
+    } catch (error) {
+        $("#imgs").html(error);
+        $('#dropdown').hide();
+    }
+}
 
+// END OF CODE FOR SHOWING IMAGES 
 function repaint(){
             if (selectedTab == "Graphs"){
                 $('#table_wrapper').hide();
                 $("#text").hide();
+                $("#imgs").hide();
                 $('#graphs').show();
+                $('#dropdown').hide();
             }
-            else if (selectedTab == "Lists"){
+            else if (selectedTab == "Lists") {
                 $('#graphs').hide();
                 $("#text").hide();
+                $("#imgs").hide();
                 $('#table_wrapper').show();
+                $('#dropdown').hide();
+            }
+            else if (selectedTab == "Images") {
+                $('#graphs').hide();
+                $("#text").hide();
+                $('#table_wrapper').hide();
+                $("#imgs").show();
+                $('#dropdown').show();
             }
             else {
                 $('#graphs').hide();
                 $('#table_wrapper').hide();
                 $("#text").show();
+                $("#imgs").hide();
+                $('#dropdown').hide();
             }
 }
 
@@ -95,6 +168,7 @@ function paint(){
             }
             generateTable();
             generateText();
+            generateImgs();
 
 }
 
@@ -144,6 +218,8 @@ $(document).ready(function(){
     $('#table_wrapper').hide();
     $('#graphs').hide();
     $('#text').hide();
+    $('#imgs').hide();
+    $('#dropdown').hide();
     $('#warpper').hide();
     $('#pipeline_results').hide();
     $('#loader').hide();

@@ -1,17 +1,26 @@
 import os
+import os.path
 import importlib.util
-
+from random import vonmisesvariate
+#from mlopenapp.tasks import make_venv 
 from django import forms
+from mlopenapp.tasks import create_venv
+from mlopenapp.models.models import MLPipeline
 from mlopenapp.forms import PipelineSelectForm
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 from django.http import JsonResponse
 from ..models import MLPipeline as Pipeline
-
+#from background_task import background
 from ..utils import io_handler as io
-
+import os
 from .. import constants
 from ..utils import params_handler
+import subprocess
+from subprocess import PIPE, Popen
+import pickle
+from os.path import exists
+
 
 
 class PipelineView(TemplateView, FormView):
@@ -92,43 +101,44 @@ class PipelineView(TemplateView, FormView):
         return JsonResponse(ret, safe=False)
 
     def update(self, clean_data):
+        print("updating")
         inpt = clean_data['input']
         inpt = inpt.file if inpt else None
 
         pipeline = clean_data['pipelines']
-        spec = importlib.util.spec_from_file_location(pipeline.control,
-                                                      os.path.join(constants.CONTROL_DIR,
-                                                                   str(pipeline.control) + '.py'))
-        control = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(control)
-
+        ret = []
+        print("to control einai", pipeline.control)
+        if(pipeline.venv == ''):
+            print('I shall make the venv')
+            create_venv.apply_async([pipeline.control])
+        #spec.loader.exec_module(control)
         params = dict(self.request.POST)
         for name in ['type', 'pipelines', 'input']:
             params.pop(name, None)
         for name, param in params.items():
             if isinstance(param, list) and len(param) == 1:
                 params[name] = param[0]
-
+        print(params)
         try:
-            if clean_data["type"] == "0":
-                model = None
-                args = {}
-                pipeline_ret = io.load_pipeline(pipeline)
-                if pipeline_ret:
-                    model = pipeline_ret[0]
-                    args = pipeline_ret[1]
-                preds = control.run_pipeline(inpt, model, args, params)
-                if "graphs" in preds and preds["graphs"] not in [None, ""]:
-                    if type(preds["graphs"]) is not list:
-                        preds["graphs"] = [preds["graphs"]]
-                ret = preds
+            if(pipeline.venv != ''):
+                path_to_venv = 'mlopenapp/venv/' + pipeline.control
+                print("found venv")
+                subprocess.call(['sh','startvenv.sh', path_to_venv, 
+                        pipeline.control,clean_data["type"],str(clean_data['input']),"params"])
+                print("its over anakin")
+                filename = constants.FILE_DIRS['graphs'] + '/' + pipeline.control + '.pkl'
+                if(exists(filename)):
+                    output = open(filename, 'rb')
+                    ret = pickle.load(output)
+                    output.close()
+                else:
+                    ret = {'error': True,
+                    'error_msg': "Failed to create graph file."}
             else:
-                control.train(inpt, params)
-                ret = {"train": "Training completed! You may now run the " + str(pipeline) + " pipeline."}
+                ret = {"train": "Initializing virtual envoronment. Please try again later."}
+
         except Exception as e:
             ret = {'error': True,
-                   'error_msg': "There was a problem during the excecution of your pipeline.",
-                   'error_info': str(e)}
-
+            'error_msg': "There was a problem during the excecution of your pipeline.",
+            'error_info': str(e)}
         return JsonResponse(ret, safe=False)
-

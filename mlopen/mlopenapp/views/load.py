@@ -4,9 +4,8 @@ from django.views.generic.edit import FormView
 from django.shortcuts import render, redirect
 from mlopenapp.forms import ImportPipelineForm
 import mlopenapp.models as m
-
 from ..utils import io_handler as io
-
+from mlopenapp.tasks import create_venv
 
 class ImportView(TemplateView, FormView):
     template_name = "data.html"
@@ -37,6 +36,8 @@ class ImportView(TemplateView, FormView):
                 temp.control = pipeline[:-3]
                 temp.created_at = datetime.now()
                 temp.save()
+                #Start initialization of venv after 10 seconds
+                create_venv.apply_async([temp.control], countdown=10)
             except:
                 return redirect(self.fail_url)
             return redirect(self.success_url)

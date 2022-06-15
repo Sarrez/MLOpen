@@ -1,26 +1,25 @@
 from mlopenapp.models.models import MLPipeline as Pipeline
-import os
-from django.http import JsonResponse
 import subprocess
 from mlopenapp.models.models import MLPipeline as Pipeline
 from mlopen.celery import app
 
 @app.task(name='mlopenapp.tasks.make_venv')
 def create_venv(pipeline_name):
-    print("Making venv..")
+    ''' Task to create a virtual environment for a pipeline in the background
+        :param pipeline_name: The name of the control file associated with the pipeline.
+    '''
+    #get Pipeline object
     context = {}
-    #print("making pipeline for pipeline with name", pipeline_name)
-    context["data"] = Pipeline.objects.get(control = 'yolo-control')
-
-    #print('Pipeline name:', context["data"].control)
-    #makevenv = 'python3 -m venv mlopen/mlopenapp/venv/' + pipeline_name
+    context["data"] = Pipeline.objects.get(control = pipeline_name)
     path_to_venv = 'mlopenapp/venv/' + pipeline_name
     path_to_reqs = 'mlopenapp/pipelines/' + pipeline_name + '/requirements.txt'
-    #os.system(makevenv)
+    
+    #create venv for the pipeline 
     subprocess.call(['sh','mlopenapp/makevenv.sh', path_to_venv, path_to_reqs])
+    
+    #add path of venv to the model
     context["data"].venv = 'mlopenapp/venv/' + pipeline_name
     context["data"].save()
-    print('venv done')
     return True
 
 @app.task(name='mlopenapp.tasks.test_task_1')

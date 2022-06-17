@@ -1,23 +1,16 @@
 import os
 import os.path
 import importlib.util
-from random import vonmisesvariate
-#from mlopenapp.tasks import make_venv 
 from django import forms
-from mlopenapp.tasks import create_venv
-from mlopenapp.models.models import MLPipeline
 from mlopenapp.forms import PipelineSelectForm
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 from django.http import JsonResponse
 from ..models import MLPipeline as Pipeline
-#from background_task import background
-from ..utils import io_handler as io
 import os
 from .. import constants
 from ..utils import params_handler
 import subprocess
-from subprocess import PIPE, Popen
 import pickle
 from os.path import exists
 
@@ -101,17 +94,12 @@ class PipelineView(TemplateView, FormView):
         return JsonResponse(ret, safe=False)
 
     def update(self, clean_data):
-        print("updating")
         inpt = clean_data['input']
         inpt = inpt.file if inpt else None
 
         pipeline = clean_data['pipelines']
         ret = []
-        print("to control einai", pipeline.control)
-        if(pipeline.venv == ''):
-            print('I shall make the venv')
-            create_venv.apply_async([pipeline.control])
-        #spec.loader.exec_module(control)
+
         params = dict(self.request.POST)
         for name in ['type', 'pipelines', 'input']:
             params.pop(name, None)

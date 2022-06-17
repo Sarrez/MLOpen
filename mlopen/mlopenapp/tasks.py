@@ -2,7 +2,7 @@ from mlopenapp.models.models import MLPipeline as Pipeline
 import subprocess
 from mlopenapp.models.models import MLPipeline as Pipeline
 from mlopen.celery import app
-
+import os
 @app.task(name='mlopenapp.tasks.make_venv')
 def create_venv(pipeline_name):
     ''' Task to create a virtual environment for a pipeline in the background
@@ -11,6 +11,8 @@ def create_venv(pipeline_name):
     #get Pipeline object
     context = {}
     context["data"] = Pipeline.objects.get(control = pipeline_name)
+    if not(os.path.exists('mlopenapp/venv/')):
+        os.makedirs('mlopenapp/venv/')
     path_to_venv = 'mlopenapp/venv/' + pipeline_name
     path_to_reqs = 'mlopenapp/pipelines/' + pipeline_name + '/requirements.txt'
     

@@ -11,5 +11,6 @@ python3 -m pip install Pillow
 python3 -m pip install sqlalchemy
 python3 -m pip install django-bootstrap4
 python3 -m pip install psycopg2
+python3 -m pip install torch
 echo 'installed reqs'
 deactivate

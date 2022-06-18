@@ -7,16 +7,11 @@ import torchvision.transforms as transforms
 import torch.optim as optim # optimzer
 import os
 import os.path
-from torch.optim import Adam
-from torch.autograd import Variable
 import torchvision
 from mlopenapp.utils import io_handler as io
 import zipfile
 from mlopenapp.pipelines.NeuralNetworkFeedForward.alexnet_model import AlexNet
 import pandas as pd
-from pathlib import Path
-import pickle
-from os.path import exists
 from mlopenapp.utils import plotter
 import torch
 import torch.nn as nn
@@ -28,21 +23,19 @@ def unzip_imgs(input, path_to_ds):
         os.makedirs('mlopenapp/data/user_data/unzipped-imgs/')
     unzipped = "mlopenapp/data/user_data/unzipped-imgs/" 
     print('Extracting images at ', unzipped)
-    path_to_dataset=unzipped+str(input).removesuffix('.zip')
-    if not(os.path.exists(path_to_dataset)):
+    path=unzipped+str(input).removesuffix('.zip')
+    if not(os.path.exists(path)):
         with zipfile.ZipFile(path_to_dataset,"r") as zip_ref:
             zip_ref.extractall(unzipped)
     
-    return path_to_dataset
+    return path
         
     
 def load_data(train_path, img_size, batch_size):
     
     ''' Loads datasets for training as DataLoaders '''
     
-    #unzip inpt if it's not unzipped
-    print('loading data for training.. the trainpath is',train_path)
-    
+    #unzip inpt if it's not unzipped    
     path = unzip_imgs(train_path, 'mlopenapp/data/user_data/')
     #Transforms
     datasetTransforms = transforms.Compose([
@@ -51,12 +44,9 @@ def load_data(train_path, img_size, batch_size):
         transforms.Normalize([0.5,0.5,0.5], [0.5,0.5,0.5]),
         transforms.RandomHorizontalFlip(p=0.5)
     ])
-    #Image paths
-    print("to teliko path einai:", path)
     #Load train and validation sets
     traindata=torchvision.datasets.ImageFolder(root=path+'/train', transform=datasetTransforms)
     classes = traindata.classes
-    print('Train classes are: ', classes)
     train_size = int(len(traindata)* 0.8)
     valid_size = len(traindata) - train_size
     validation, train = torch.utils.data.random_split(traindata, [valid_size, train_size], generator=torch.Generator().manual_seed(42))
@@ -65,7 +55,6 @@ def load_data(train_path, img_size, batch_size):
         
     return loadtraindata,loadvaldata,classes
 
-#"mlopen/mlopenapp/data/user_data/unzipped-imgs/train"
 def train_model(model, train_dl, valid_dl, optimizer, criterion, device='cpu'):
     
     ''' Implements the training of a model for an epoch '''
@@ -78,7 +67,7 @@ def train_model(model, train_dl, valid_dl, optimizer, criterion, device='cpu'):
     for batch_idx, (data, targets) in enumerate(train_dl):
         data = data.to(device=device)
         targets = targets.to(device=device)
-        ## Forward Pass
+        #Forward Pass
         optimizer.zero_grad()
         scores, probs = model(data)
         loss = criterion(scores,targets)
@@ -123,7 +112,6 @@ def train_loop(train_path, img_size, batch_size, criterion, optimizer, num_epoch
 def load_run_dataset(path):
     
     ''' Loads the dataset used to run a trained model '''
-    print('to load run path einai', path)
     unzipped_path = unzip_imgs(path,'mlopenapp/data/user_data/')
     import shutil
     dst_path = 'mlopenapp/static/images/'+ path.removesuffix('.zip')
@@ -137,7 +125,6 @@ def load_run_dataset(path):
     ])
     ds = torchvision.datasets.ImageFolder(dst_path, transform=testTransforms)
     loadrundata = torch.utils.data.DataLoader(ds, batch_size=1, shuffle=False,num_workers=1)
-    print('reutning datasets')
     return ds, loadrundata
 
 def predict_images(dataset, model, classlist):
@@ -191,16 +178,12 @@ def run_pipeline(input, model, args, params=None):
     '''Function to run the model in the platform'''
     preds={'graphs':[], 'imgs':[]}
     #prepare input 
-    print('to args einai', args['img-classification-classlist'])
-    print("Running")
     filename = 'mlopenapp/storage/models/AlexNet_epoch_50'
-    print("Model is: ", model) 
     
     dataset, dataloader = load_run_dataset(str(input))
-    print(dataset.classes)
     #predict images
     print("predicting images..")
-    classlist =['a','b','c','d','e','f','g','h','i','j']
+    classlist = args['img-classification-classlist']
     classes = predict_images(dataloader, model, classlist)
     #prepare results format
     filenames = []
@@ -210,8 +193,6 @@ def run_pipeline(input, model, args, params=None):
         print(filename.replace('mlopenapp',''))
     #format results
     print("formatting images..")
-
-    
     df = get_df (filenames, classes)
     counts = df['class'].value_counts().sort_index().sort_index()
     unique_classes = df['class'].unique().tolist()
@@ -233,10 +214,6 @@ def run_pipeline(input, model, args, params=None):
     imgs_dict = {}
     for i in range(len(res['Name'])):
         imgs_dict.update({res['Name'][i]:res['Images'][i]})
-
-    #print(img_list)
-    #preds.update({'imgs': [imgs_dict]})
-    #move images to static/images in order to be printed
 
     preds['imgs'].append(imgs_dict)
     preds['graphs'] += plotter.bar(res,'Name','Count')

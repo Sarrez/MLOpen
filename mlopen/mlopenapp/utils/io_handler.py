@@ -59,6 +59,8 @@ def load(name, type):
         return False
 
 def save_graphs(graphs, name):
+    if not(os.path.exists('mlopenapp/storage/graphs/')):
+        os.makedirs('mlopenapp/storage/graphs/')
     temp = save(graphs, name, True, 'graphs')
     
     

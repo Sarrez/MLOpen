@@ -10,7 +10,7 @@ import os.path
 import torchvision
 from mlopenapp.utils import io_handler as io
 import zipfile
-from mlopenapp.pipelines.NeuralNetworkFeedForward.alexnet_model import AlexNet
+from mlopenapp.pipelines.NeuralNetworkFeedForward.alexnet import AlexNet
 import pandas as pd
 from mlopenapp.utils import plotter
 import torch
@@ -23,12 +23,12 @@ def unzip_imgs(input, path_to_ds):
         os.makedirs('mlopenapp/data/user_data/unzipped-imgs/')
     unzipped = "mlopenapp/data/user_data/unzipped-imgs/" 
     print('Extracting images at ', unzipped)
-    path=unzipped+str(input).removesuffix('.zip')
-    if not(os.path.exists(path)):
+    path_to_dataset=unzipped+str(input).removesuffix('.zip')
+    if not(os.path.exists(path_to_dataset)):
         with zipfile.ZipFile(path_to_dataset,"r") as zip_ref:
             zip_ref.extractall(unzipped)
     
-    return path
+    return path_to_dataset
         
     
 def load_data(train_path, img_size, batch_size):
@@ -44,6 +44,7 @@ def load_data(train_path, img_size, batch_size):
         transforms.Normalize([0.5,0.5,0.5], [0.5,0.5,0.5]),
         transforms.RandomHorizontalFlip(p=0.5)
     ])
+    #Image paths
     #Load train and validation sets
     traindata=torchvision.datasets.ImageFolder(root=path+'/train', transform=datasetTransforms)
     classes = traindata.classes
@@ -55,6 +56,7 @@ def load_data(train_path, img_size, batch_size):
         
     return loadtraindata,loadvaldata,classes
 
+#"mlopen/mlopenapp/data/user_data/unzipped-imgs/train"
 def train_model(model, train_dl, valid_dl, optimizer, criterion, device='cpu'):
     
     ''' Implements the training of a model for an epoch '''
@@ -92,7 +94,6 @@ def train_loop(train_path, img_size, batch_size, criterion, optimizer, num_epoch
     
     batch_size = 64
     img_size = 227
-    print('to train path einai', train_path)
     loadtraindata,loadvaldata,classes = load_data(train_path, img_size, batch_size)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = AlexNet() 
@@ -154,7 +155,6 @@ def get_df(filenames, classes):
 def train(inpt, params=None):
     
     '''Function to train the model in the platform'''
-    print('Starting training in train function..')
     batch_size = 64
     img_size = 227
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -165,8 +165,6 @@ def train(inpt, params=None):
     optimizer = optim.Adam(model.parameters(), lr= learning_rate) 
     
     model, optimizer, losses, classes = train_loop(inpt.__str__(), img_size, batch_size, criterion, optimizer, num_epochs = 1)
-    print('training complete!')
-    print('saving classes:', classes)
     #save model
     models = [(model, 'img-classification-model')]
     args = [(classes, 'img-classification-classlist')]
@@ -177,22 +175,17 @@ def run_pipeline(input, model, args, params=None):
     
     '''Function to run the model in the platform'''
     preds={'graphs':[], 'imgs':[]}
-    #prepare input 
-    filename = 'mlopenapp/storage/models/AlexNet_epoch_50'
-    
+    #prepare input     
     dataset, dataloader = load_run_dataset(str(input))
     #predict images
-    print("predicting images..")
     classlist = args['img-classification-classlist']
     classes = predict_images(dataloader, model, classlist)
     #prepare results format
     filenames = []
-    print("formatting filanames..")
     for filename,_ in dataset.imgs:
         filenames.append(filename.replace('mlopenapp',''))
-        print(filename.replace('mlopenapp',''))
     #format results
-    print("formatting images..")
+    
     df = get_df (filenames, classes)
     counts = df['class'].value_counts().sort_index().sort_index()
     unique_classes = df['class'].unique().tolist()

@@ -1,5 +1,3 @@
-from cmath import cos
-from gc import callbacks
 import zipfile
 from PIL import Image
 from sqlalchemy import null
@@ -10,12 +8,11 @@ import pandas as pd
 import os
 from mlopenapp.utils import io_handler as io
 os.system('git clone https://github.com/ultralytics/yolov5')
-os.system('pip install -U -r yolov5/requirements.txt')
+#os.system('pip install -U -r yolov5/requirements.txt')
 from yolov5 import train as yolo_train
 from yolov5.utils.callbacks import Callbacks 
 import glob
 import os
-import subprocess
 
 class Options:
     def __init__(self, save_dir, weights, data, epochs, batch_size, imgsz, workers, name, single_cls,
@@ -107,9 +104,7 @@ def get_image_names(path):
     print('to static path einai', staticpath)
     imgnames = [(staticpath+'image'+str(i)+'.jpg') for i in range (len(os.listdir(path)))]
     return imgnames
-#prepares images for heatmap per class
-#Constructs heatmaps 
-#Constructs heatmaps 
+
 def collect_imgs(frames):
     #classlist contains imglists
     imglist=[]
@@ -141,7 +136,6 @@ def collect_imgs(frames):
     return heatmaps
 
 def get_results(results,num_of_imgs,image_names):
-    #dt = results.pandas()
     df = results.pandas().xyxy[0]
     df['imgname'] = image_names[0]
     merged_results = pd.DataFrame()
@@ -172,62 +166,49 @@ def train(input, args=[]):
     print('to path tou dataset einai', datapath)
     unzip_imgs(datapath)
     #train model
-    name = 'yolo_results_390'
-    path = ' mlopen/mlopenapp/yolov5/runs/train/'+name+'/best.pt'
     hyp = 'mlopenapp/pipelines/yolo-control/hyp.yaml'
-    save_path = 'yolov5/runs/train/yolo_results' 
+    save_path = 'mlopenapp/pipelines/yolo_results/results' 
     opt = Options(save_path, 'mlopenapp/pipelines/yolo-control/yolov5s.pt',
      'mlopenapp/pipelines/yolo-control/imgnet2012sample.yaml', 
-      epochs=8, batch_size=32, imgsz=150, workers=1, name='exp',
+      epochs=1, batch_size=32, imgsz=150, workers=1, name='results',
       single_cls=False, evolve= null, cfg='yolov5/models/yolov5s.yaml', 
       resume=False, noval=False, nosave=False, freeze= [0],pretrained=False, optimizer='SDG',
-      cos_lr=False, rect=False, noautoanchor=False, sync_bn=False, cache='ram',image_weights=False,project = 'yolov5/runs/train')
+      cos_lr=False, rect=False, noautoanchor=False, sync_bn=False, cache='ram',image_weights=False,project = 'mlopenapp/pipelines/yolo_results/')
     callbacks = Callbacks()
     print('training yolo')
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     yolo_train.train( hyp, opt, device, callbacks)
     print('trained yolo')
     models = []
-    args = [('yolov5/runs/train/yolo_results_34/best.pt','best-weights')]
-    path_to_weights = 'mlopen/mlopenapp/yolov5/runs/train/yolo_results/best.pt'
+    path_to_weights = 'mlopenapp/pipelines/yolo_results/results/weights/best.pt'
+    args = [(path_to_weights,'best-weights')]
     io.save_pipeline(models, args, os.path.basename(__file__))
     return path_to_weights
 
 def run_pipeline(input, model, args, params=None):
-    #if(pretrained):
-    #    print('pretrained')
-    #model = yolo_detect.run('ultralytics/yolov5','yolov5s', classes=80)
-    print('Model is ', model)
-    print('args is ', (args))
-    #if(bool(args)):
-        #using custom weights from training
-        #print('Using custom weights from training')
-        #weights_path = args['best-weights.pkl']
-        #model = torch.hub.load('ultralytics/yolov5', weights_path , classes=80)
-        #model = torch.hub.load('ultralytics/yolov5', 'custom', weights_path)
-    #else:
-        #pretrained using yolov5s weights
-    print("running model")
-    model = torch.hub.load('ultralytics/yolov5','yolov5s', force_reload=True)
-    #imgnames = get_image_names('runs/detect/exp27')
-    imgs = load_images(input)
+    
     preds = {'graphs': [], 'text':'','imgs':[]}
-    #model = torch.hub.load('ultralytics/yolov5', 'custom', path='best.pt', force_reload=True) 
-    print('')
+    if(bool(args)):
+        #using custom weights from training
+        print('Using custom weights from training')
+        weights_path = args['best-weights']
+        model = torch.hub.load('ultralytics/yolov5', 'custom', weights_path)
+    else:
+        #pretrained using yolov5s weights
+        model = torch.hub.load('ultralytics/yolov5','yolov5s', force_reload=True)
+        
+    imgs = load_images(input)
     results = model(imgs)
     results.save(save_dir='mlopenapp/static/images/runs/detect/exp')
+    
     #get results as dataframes
-    #path to original results
-    filelist = glob.glob('mlopenapp/static/images/runs/detect/*') # * means all if need specific format then *.csv
+    filelist = glob.glob('mlopenapp/static/images/runs/detect/*') 
     latest_file = max(filelist, key=os.path.getctime)
-    #imgnames = get_image_names('detect/exp40/')
-    print(latest_file)
     imgnames = get_image_names(latest_file+'/')
     frames = get_results(results,len(imgs),imgnames)
     graph_data = collect_imgs(frames)
 
     #extract data from dataframes
-    #classes = graph_data['Name']
     print("making heatmaps")
     classes = []
     for i in range(0, len(graph_data['Name'])):
@@ -237,22 +218,15 @@ def run_pipeline(input, model, args, params=None):
     heatmaps = graph_data['Heatmap']
     data = {'Class':classes,'Average confidence':conf_list}
     df = pd.DataFrame(data)
+    
     #add graphs
     print("adding graphs")
     preds['graphs'] += plotter.bar(df,df.columns[0],df.columns[1])
     preds['graphs'] += plotter.custom_heatmap(heatmaps, classes)
-    #print(graph_data['Name'])
-    #imgs_dict = plotter.populate_images(latest_file+'/', graph_data['Images'], graph_data['Name'])
     imgs_dict = {}
     for i in range(len(classes)):
-        #print("Creating graph for class number ",i," called ", classes[i])
         imglist = graph_data['Images'][i]
         print(imglist)
         imgs_dict.update({classes[i]:imglist})
-    #print(img_list)
-    #preds.update({'imgs': [imgs_dict]})
     preds['imgs'].append(imgs_dict)
-    #dicti = preds['imgs'][0]
-    #print('to preds[imgs] einai',dicti.keys())
-    #print(img_dict['person'])
     return preds

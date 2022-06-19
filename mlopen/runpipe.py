@@ -29,10 +29,11 @@ def run():
             model = None
             args = {}
             pipeline_ret = io.load_pipeline(pipeline)
-            #print("Pipeline ret: ", pipeline_ret)
+            print("Pipeline ret: ", pipeline_ret)
             if pipeline_ret:
                 model = pipeline_ret[0]
                 args = pipeline_ret[1]
+                print('ta args einai: ', pipeline_ret[1])
                 params = []
                 preds = control.run_pipeline(inpt, model, args, params)
                 if "graphs" in preds and preds["graphs"] not in [None, ""]:
@@ -40,6 +41,9 @@ def run():
                         preds["graphs"] = [preds["graphs"]]
                 print("done with graphs")
                 ret = preds
+            else:
+                ret = {'error': True,
+                'error_msg': "There was a problem during the excecution of your pipeline."}
         else:
                 print('INPUT IS 1 - TRAINING MODEL')
                 control.train(inpt)

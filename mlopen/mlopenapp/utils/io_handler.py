@@ -17,12 +17,10 @@ from django.core.files.storage import FileSystemStorage
 def save(arg_object, name, save_to_db=False, type=None):
     try:            
         output = open(constants.FILE_DIRS[type] + '/' + name + '.pkl', 'wb')
-        #print('Will be saving ', output)
         pickle.dump(arg_object, output, pickle.HIGHEST_PROTOCOL)
         output.close()
         if save_to_db:
             output = open(constants.FILE_DIRS[type] + '/' + name + '.pkl', 'rb')
-            #print('output is: ', output)
             if(type=='graphs'):
                 filefield, _ = constants.FILE_TYPES[type].objects.get_or_create(
                     name=name,
@@ -77,7 +75,6 @@ def save_pipeline(models, args, name):
         if type(temp) == bool:
             return False
         pip_models.append(temp)
-    #print(len(args))
     for arg in args:
         temp = save(arg[0], arg[1], True, 'arg')
         if type(temp) == bool:
@@ -96,16 +93,12 @@ def save_pipeline(models, args, name):
     pipeline.save()
     for model in pip_models:
         pipeline.ml_models.add(model)
-        print('pip model: ', model)
     for arg in pip_args:
         pipeline.ml_args.add(arg)
     pipeline.save()
-    print('saved')
-
 
 def get_pipeline_list():
     pipeline_list = []
-    print(pipeline_list)
     for filename in os.listdir(constants.CONTROL_DIR):
         if filename.endswith("control.py"):
             pipeline_list.append(filename[:-3])
@@ -121,8 +114,6 @@ def save_pipeline_file(f):
 def load_pipeline(pipeline):
     try:
         model_qs = pipeline.get_models()
-        #model_qs.delete()
-        print('model qs', model_qs)
         args_qs = pipeline.get_args()
         model = None
         args = {}
@@ -130,9 +121,7 @@ def load_pipeline(pipeline):
             if search('torch', m.name):
                 model = m.file.path
             else:
-            #print('name of model file',m.file.path)
                 model = pickle.load(m.file.open('rb'))
-            #print("Loaded model ", model)
         for ar in args_qs:
             args[ar.name] = pickle.load(ar.file.open('rb'))
         return model, args

@@ -44,8 +44,6 @@ class PipelineView(TemplateView, FormView):
                     control = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(control)
                     type = self.request.POST.get("type", False)
-                    print(type)
-                    print(pipeline)
                     type = True if type and int(type) == 0 else False
                     print("TYPE IS " + str(type))
                     params = control.get_params(type)
@@ -99,21 +97,17 @@ class PipelineView(TemplateView, FormView):
 
         pipeline = clean_data['pipelines']
         ret = []
-
         params = dict(self.request.POST)
         for name in ['type', 'pipelines', 'input']:
             params.pop(name, None)
         for name, param in params.items():
             if isinstance(param, list) and len(param) == 1:
                 params[name] = param[0]
-        print(params)
         try:
             if(pipeline.venv != ''):
                 path_to_venv = 'mlopenapp/venv/' + pipeline.control
-                print("found venv")
                 subprocess.call(['sh','startvenv.sh', path_to_venv, 
                         pipeline.control,clean_data["type"],str(clean_data['input']),"params"])
-                print("its over anakin")
                 filename = constants.FILE_DIRS['graphs'] + '/' + pipeline.control + '.pkl'
                 if(exists(filename)):
                     output = open(filename, 'rb')

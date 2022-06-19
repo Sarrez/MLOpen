@@ -35,7 +35,7 @@ services:
       - db
 
   redis:
-    image: sarrez99/mlopen:mlopen_redis
+    image: sarrez99/mlopen:redis
 
   celery:
     restart: always

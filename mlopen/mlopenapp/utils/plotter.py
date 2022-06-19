@@ -88,8 +88,6 @@ def plotlify_scatter_js(xy=None, x=None, y=None, xtag=None, ytag=None, descripti
     return ret
 
 def bar(df,x_name,y_name):
-    print(len(x_name))
-    print(len(y_name))
     fig = px.bar(df, x=x_name, y=y_name)
     div = opy.plot(fig, auto_open=False, output_type='div', include_plotlyjs=False)
 
@@ -102,17 +100,12 @@ def custom_heatmap(heatmaps, class_names):
     i=0
     while i < len(heatmaps):
         for j in range(1, 8):
-            #print(f" j:",j)
             for k in range(1,5):
-                #print(f"  k:",k)
                 fig.add_trace(go.Heatmap(z= heatmaps[i]), j, k)
                 i = i + 1
-                #print(f"   i:",i)
                 if(i==len(heatmaps)):
-                    #print("Exiting..")
                     break
             if(i==len(heatmaps)):
-                #print("Exiting..")
                 break
     
     fig.update_layout(width = 1500, height = 2800)

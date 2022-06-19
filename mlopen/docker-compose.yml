@@ -1,10 +1,11 @@
 version: "3.9" 
 services:
   db:
-    build: 
-      context: .
-      dockerfile: ./docker/docker-db/Dockerfile
-      shm_size: '4gb'
+    #build: 
+      #context: .
+      #dockerfile: ./docker/docker-db/Dockerfile
+      #shm_size: '4gb'
+    image: sarrez99/mlopen:mlopen_db
     shm_size: '4gb'
     volumes:
       - ./pgdata/db:/var/lib/postgresql/data
@@ -13,10 +14,11 @@ services:
     env_file:
       - ./.env
   web:
-    build: 
-      context: .
-      dockerfile: ./docker/docker-web/Dockerfile
-      shm_size: '4gb'
+    #build: 
+      #context: .
+      #dockerfile: ./docker/docker-web/Dockerfile
+      #shm_size: '4gb'
+    image: sarrez99/mlopen:mlopen_web
     shm_size: '4gb'
     command: >
       sh -c "python manage.py collectstatic --noinput &&
@@ -33,14 +35,15 @@ services:
       - db
 
   redis:
-    image: redis:alpine
+    image: sarrez99/mlopen:mlopen_redis
 
   celery:
     restart: always
-    build: 
-      context: .
-      dockerfile: ./docker/docker-web/Dockerfile
-      shm_size: '4gb'
+    #build: 
+      #context: .
+      #dockerfile: ./docker/docker-web/Dockerfile
+      #shm_size: '4gb'
+    image: sarrez99/mlopen:mlopen_celery
     shm_size: '4gb'
     command: celery -A mlopen worker -l info
 

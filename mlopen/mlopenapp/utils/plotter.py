@@ -2,6 +2,8 @@ import plotly.express as px
 import plotly.offline as opy
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+import numpy as np
+import pandas as pd
 
 def pie_plot_from_lists(labels=None, values=None, title=None):
     """
@@ -92,8 +94,51 @@ def bar(df,x_name,y_name):
     div = opy.plot(fig, auto_open=False, output_type='div', include_plotlyjs=False)
 
     return div
+def detect_bbox(img,xmin,ymin,xmax,ymax):
+    
+    ''' Stacks bounding boxes of the a class on an initially empty image.
+        :param img: 2D numpy array '''
+    
+    for i in range(img.shape[0]):
+        height=i
+        for j in range(img.shape[1]):
+            width=j
+            if(width<xmin or width>xmax):
+                img[i][j]+=1
+            elif(height<ymin or height>ymax):
+                img[i][j]+=1
+    return img
 
-def custom_heatmap(heatmaps, class_names):
+def collect_imgs(frames):
+
+    '''  Creates heatmaps for all classes.
+        :param frames: list of dataframes, one for each class detected.
+        :return: dictionary with all heatmaps'''
+
+    imglist=[]
+    total_confidence=0
+    heatmaps = {"Heatmap":[]}
+    for i in range (0, len(frames)):   
+        #initialize empty image as numpy array 
+        final_img = np.zeros((150,150))
+        imglist=[]
+        frame = frames[i]
+        for i, row in frame.iterrows():
+            final_img = detect_bbox(final_img,row.xmin,row.ymin,row.xmax,row.ymax)
+            total_confidence += row.confidence
+            if row.imgname not in imglist:
+                imglist.append(row.imgname) 
+        final_img = final_img/len(frame)
+        heatmaps["Heatmap"].append(final_img)
+        
+    return heatmaps
+
+def custom_heatmap(frames, class_names):
+
+    ''' Creates a plot with heatmaps as subplots.'''
+    
+    results = collect_imgs(frames)
+    heatmaps = results['Heatmap']
     width = int(len(heatmaps)/4)
     height = 2*int(len(heatmaps)%4)
     fig = make_subplots(7, 4, subplot_titles=class_names)

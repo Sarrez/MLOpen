@@ -59,7 +59,7 @@ class Options:
 
 def load_images(input):
     
-    ''' Reads images from a zip file and loads them in a list used to run the YOLO pipeline
+    ''' Reads images from a zip file and loads them in a list as PIL Images.
         :param input: Path to zip file.   '''
         
     print("To input einai", input)
@@ -74,8 +74,8 @@ def load_images(input):
         img = Image.open(file)
         img = img.resize((150,150))
         imgs += [img]
-    print('returning images..')
     return imgs
+
 def unzip_imgs(input):
     if not(os.path.exists('mlopenapp/data/user_data/unzipped-imgs/')):
         os.makedirs('mlopenapp/data/user_data/unzipped-imgs/')
@@ -84,58 +84,24 @@ def unzip_imgs(input):
     with zipfile.ZipFile(input,"r") as zip_ref:
         zip_ref.extractall(unzipped)
 
-def detect_bbox(img,xmin,ymin,xmax,ymax):
-    
-    ''' Stacks bounding boxes of the a class on an initially empty image.
-        :param img: 2D numpy array '''
-    
-    for i in range(img.shape[0]):
-        height=i
-        for j in range(img.shape[1]):
-            width=j
-            if(width<xmin or width>xmax):
-                img[i][j]+=1
-            elif(height<ymin or height>ymax):
-                img[i][j]+=1
-    return img
-
 def get_image_names(path):
+    ''' Returns the names of images including the static path.
+        The images must be in this format in order to be printed to the user through the platform.
+        :param path: the path to the images
+    '''
     staticpath = path.replace('mlopenapp','')
-    print('to static path einai', staticpath)
+    print('The static path is', staticpath)
     imgnames = [(staticpath+'image'+str(i)+'.jpg') for i in range (len(os.listdir(path)))]
     return imgnames
 
-def collect_imgs(frames):
-    #classlist contains imglists
-    imglist=[]
-    total=0
-    total_confidence=0
-    heatmaps = {"Name": [],"Heatmap":[],"Average Confidence":[], "Images":[]}
-    # for each frame
-    for i in range (0, len(frames)):   
-        #initialize empty image as numpy array 
-        final_img = np.zeros((150,150))
-        imglist=[]
-        frame = frames[i]
-        #for each row in frame
-        for i, row in frame.iterrows():
-            final_img = detect_bbox(final_img,row.xmin,row.ymin,row.xmax,row.ymax)
-            total_confidence += row.confidence
-            if row.imgname not in imglist:
-                imglist.append(row.imgname) 
-        #edit results
-        avg_confidence=0
-        final_img = final_img/len(frame)
-        avg_confidence = total_confidence/len(frame)
-        #append results to dictionary
-        heatmaps["Name"].append(frame['name'].unique())
-        heatmaps["Heatmap"].append(final_img)
-        heatmaps["Average Confidence"].append(avg_confidence)
-        heatmaps["Images"].append(imglist)
-        
-    return heatmaps
-
 def get_results(results,num_of_imgs,image_names):
+
+    ''' Formats results returned after using YOLOv5 for inference.
+        :param results: a YOLO Detections object
+        :param num_of_imgs: number of images used for inference
+        :param image_names: list of image names used for inference
+    '''
+
     df = results.pandas().xyxy[0]
     df['imgname'] = image_names[0]
     merged_results = pd.DataFrame()
@@ -158,14 +124,15 @@ def get_results(results,num_of_imgs,image_names):
         class_index = unique_classes[i]
         df = groups.get_group(class_index)
         split += [df]
-        
     return split
+
 def train(input, args=[]):
     #unzip images
     datapath = 'mlopenapp/data/user_data/'+str(input)
     print('to path tou dataset einai', datapath)
     unzip_imgs(datapath)
-    #train model
+
+    #prepare parameters
     hyp = 'mlopenapp/pipelines/yolo-control/hyp.yaml'
     save_path = 'mlopenapp/pipelines/yolo_results/results' 
     opt = Options(save_path, 'mlopenapp/pipelines/yolo-control/yolov5s.pt',
@@ -175,10 +142,10 @@ def train(input, args=[]):
       resume=False, noval=False, nosave=False, freeze= [0],pretrained=False, optimizer='SDG',
       cos_lr=False, rect=False, noautoanchor=False, sync_bn=False, cache='ram',image_weights=False,project = 'mlopenapp/pipelines/yolo_results/')
     callbacks = Callbacks()
-    print('training yolo')
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+    #train and save model
     yolo_train.train( hyp, opt, device, callbacks)
-    print('trained yolo')
     models = []
     path_to_weights = 'mlopenapp/pipelines/yolo_results/results/weights/best.pt'
     args = [(path_to_weights,'best-weights')]
@@ -188,45 +155,62 @@ def train(input, args=[]):
 def run_pipeline(input, model, args, params=None):
     
     preds = {'graphs': [], 'text':'','imgs':[]}
+
+    #use pretrained model if trained not available
     if(bool(args)):
-        #using custom weights from training
         print('Using custom weights from training')
         weights_path = args['best-weights']
         model = torch.hub.load('ultralytics/yolov5', 'custom', weights_path)
     else:
-        #pretrained using yolov5s weights
         model = torch.hub.load('ultralytics/yolov5','yolov5s', force_reload=True)
-        
+    
+    #load images, train and save results
     imgs = load_images(input)
     results = model(imgs)
     results.save(save_dir='mlopenapp/static/images/runs/detect/exp')
     
-    #get results as dataframes
+    #format results as dataframes
     filelist = glob.glob('mlopenapp/static/images/runs/detect/*') 
     latest_file = max(filelist, key=os.path.getctime)
     imgnames = get_image_names(latest_file+'/')
     frames = get_results(results,len(imgs),imgnames)
-    graph_data = collect_imgs(frames)
 
     #extract data from dataframes
-    print("making heatmaps")
-    classes = []
-    for i in range(0, len(graph_data['Name'])):
-        classes.append(graph_data['Name'][i][0])
-    print('Classes: ', classes)
+    imglist=[]
+    total_confidence=0
+    graph_data = {"Name": [], "Average Confidence":[], "Images":[]}
+    for i in range (0, len(frames)):   
+        imglist=[]
+        frame = frames[i]
+        print(i)
+        for i, row in frame.iterrows():
+            total_confidence += row.confidence
+            if row.imgname not in imglist:
+                imglist.append(row.imgname) 
+        avg_confidence=0
+        avg_confidence = total_confidence/len(frame)
+        graph_data["Name"].append(frame['name'].unique())
+        graph_data["Average Confidence"].append(avg_confidence)
+        graph_data["Images"].append(imglist)
+
     conf_list = graph_data['Average Confidence']
-    heatmaps = graph_data['Heatmap']
-    data = {'Class':classes,'Average confidence':conf_list}
+    class_names = []
+    for i in range(0, len(graph_data['Name'])):
+        class_names.append(graph_data['Name'][i][0])
+    data = {'Class':class_names,'Average confidence':conf_list}
     df = pd.DataFrame(data)
     
     #add graphs
     print("adding graphs")
     preds['graphs'] += plotter.bar(df,df.columns[0],df.columns[1])
-    preds['graphs'] += plotter.custom_heatmap(heatmaps, classes)
+    preds['graphs'] += plotter.custom_heatmap(frames, class_names)
+
+    #format results for showing images
     imgs_dict = {}
-    for i in range(len(classes)):
+    for i in range(len(class_names)):
         imglist = graph_data['Images'][i]
         print(imglist)
-        imgs_dict.update({classes[i]:imglist})
+        imgs_dict.update({class_names[i]:imglist})
     preds['imgs'].append(imgs_dict)
+    
     return preds

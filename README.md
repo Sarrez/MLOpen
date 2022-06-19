@@ -4,7 +4,11 @@ mlopen is a django web application for uploading and running machine learning pi
 
 ## Installation
 
-TODO
+The mlopen platform can be installed using Docker. For the installation to be possible Docker must be downloaded locally.
+
+The Docker Images implementing the platform can be downloaded from [this](https://hub.docker.com/r/sarrez99/mlopen/tags) Docker Hub repository.
+After all images have been downloaded, the platform can be executed by running the command `docker-compose up` in the folder 
+where the docker-compose.yml file is located.
 
 ## Usage
 ### Creating pipelines to be trained and/or run in the mlopen platform

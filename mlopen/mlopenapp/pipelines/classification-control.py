@@ -16,19 +16,20 @@ from mlopenapp.utils import plotter
 import torch
 import torch.nn as nn
 import torch.nn.functional as fn
+import shutil
 
-def unzip_imgs(input, path_to_ds):
+
+def unzip_imgs(input, path_to_ds, unzip_path):
     path_to_dataset = path_to_ds + str(input)
-    if not(os.path.exists('mlopenapp/data/user_data/unzipped-imgs/')):
-        os.makedirs('mlopenapp/data/user_data/unzipped-imgs/')
-    unzipped = "mlopenapp/data/user_data/unzipped-imgs/" 
-    print('Extracting images at ', unzipped)
-    path_to_dataset=unzipped+str(input).removesuffix('.zip')
-    if not(os.path.exists(path_to_dataset)):
+    if not(os.path.exists(unzip_path)):
+        os.makedirs(unzip_path)
+    print('Extracting images at ', unzip_path)
+    newpath=unzip_path+str(input).removesuffix('.zip')
+    if not(os.path.exists(newpath)):
         with zipfile.ZipFile(path_to_dataset,"r") as zip_ref:
-            zip_ref.extractall(unzipped)
+            zip_ref.extractall(unzip_path)
     
-    return path_to_dataset
+    return newpath
         
     
 def load_data(train_path, img_size, batch_size):
@@ -36,7 +37,7 @@ def load_data(train_path, img_size, batch_size):
     ''' Loads datasets for training as DataLoaders '''
     
     #unzip inpt if it's not unzipped    
-    path = unzip_imgs(train_path, 'mlopenapp/data/user_data/')
+    path = unzip_imgs(train_path, 'mlopenapp/data/user_data/', 'mlopenapp/data/user_data/unzipped-imgs/')
     #Transforms
     datasetTransforms = transforms.Compose([
         transforms.Resize((img_size,img_size)),
@@ -56,7 +57,6 @@ def load_data(train_path, img_size, batch_size):
         
     return loadtraindata,loadvaldata,classes
 
-#"mlopen/mlopenapp/data/user_data/unzipped-imgs/train"
 def train_model(model, train_dl, valid_dl, optimizer, criterion, device='cpu'):
     
     ''' Implements the training of a model for an epoch '''
@@ -113,11 +113,11 @@ def train_loop(train_path, img_size, batch_size, criterion, optimizer, num_epoch
 def load_run_dataset(path):
     
     ''' Loads the dataset used to run a trained model '''
-    unzipped_path = unzip_imgs(path,'mlopenapp/data/user_data/')
-    import shutil
+    unzip_path = 'mlopenapp/data/user_data/unzipped-imgs/'+ str(path).removesuffix('.zip') + '/'
+    unzipped_path = unzip_imgs(path,'mlopenapp/data/user_data/',unzip_path)
     dst_path = 'mlopenapp/static/images/'+ path.removesuffix('.zip')
     if not (os.path.exists(dst_path)):
-        shutil.copytree(path, dst_path)
+        shutil.copytree(unzip_path, dst_path)
     
     testTransforms = transforms.Compose([
         transforms.Resize((227,227)),
@@ -177,15 +177,17 @@ def run_pipeline(input, model, args, params=None):
     preds={'graphs':[], 'imgs':[]}
     #prepare input     
     dataset, dataloader = load_run_dataset(str(input))
+
     #predict images
     classlist = args['img-classification-classlist']
     classes = predict_images(dataloader, model, classlist)
+    
     #prepare results format
     filenames = []
     for filename,_ in dataset.imgs:
         filenames.append(filename.replace('mlopenapp',''))
+
     #format results
-    
     df = get_df (filenames, classes)
     counts = df['class'].value_counts().sort_index().sort_index()
     unique_classes = df['class'].unique().tolist()

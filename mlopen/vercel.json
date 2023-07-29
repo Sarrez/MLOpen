@@ -1,0 +1,14 @@
+{
+    "builds": [
+      {
+        "src": "mlopen/wsgi.py",
+        "use": "@vercel/python"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "mlopen/wsgi.py"
+      }
+    ]
+}

@@ -83,14 +83,21 @@ WSGI_APPLICATION = 'mlopen.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.environ.get('POSTGRES_DB', 'mlopen'),
-        'USER': os.environ.get('POSTGRES_USER', 'mlopen'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'mlopen'),
+        #'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        #'NAME': os.environ.get('POSTGRES_DB', 'mlopen'),
+        #'USER': os.environ.get('POSTGRES_USER', 'mlopen'),
+        #'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'mlopen'),
         #'HOST': os.environ.get('POSTGRES_HOST', '::1'),
-        'HOST':'db',
-        'PORT': os.environ.get('POSTGRES_PORT', '5432').split(":")[-1],
-        'CONN_MAX_AGE': 300
+        #'HOST':'db',
+        #'PORT': os.environ.get('POSTGRES_PORT', '5432').split(":")[-1],
+        #'CONN_MAX_AGE': 300
+        'ENGINE': 'django.db.backends.postgresql',
+        'URL': os.getenv('POSTGRES_URL'),
+        'NAME': os.getenv('PGNAME'),
+        'USER': os.getenv('PGUSER'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+        'HOST': os.getenv('PGHOST'),
+        'PORT': os.getenv('PGPORT'),
     }
 }
 

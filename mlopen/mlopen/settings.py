@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'bootstrap4',
     'mlopenapp.apps.MlopenappConfig',
+    'mlopenapp',
 ]
 
 MIDDLEWARE = [
@@ -76,7 +77,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'mlopen.wsgi.application'
+WSGI_APPLICATION = 'mlopen.wsgi.app'
 
 
 # Database
